@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Семейный бюджет</title>
+<title>Семейный бюджет v3</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -273,15 +273,14 @@ header{background:rgba(8,11,20,.93);backdrop-filter:blur(20px);border-bottom:1px
 <div class="cat-wrap"><div class="pills" id="pills"></div></div>
 
 <div class="add-form" id="addForm">
-  <div class="frow">
-    <div>
-      <span class="fl">Категория</span>
-      <select class="fi" id="catSel"></select>
-    </div>
-    <div>
-      <span class="fl">Сумма (₴)</span>
-      <input class="fi" id="amtInp" type="text" inputmode="decimal" placeholder="0"/>
-    </div>
+  <div class="frow full" style="margin-bottom:9px">
+    <span class="fl">Категория</span>
+    <div id="catPicker" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px"></div>
+    <input type="hidden" id="catSel" value=""/>
+  </div>
+  <div class="frow full">
+    <span class="fl">Сумма (₴)</span>
+    <input class="fi" id="amtInp" type="text" inputmode="decimal" placeholder="0"/>
   </div>
   <div class="frow full">
     <span class="fl">Комментарий</span>
@@ -419,17 +418,35 @@ function setFilter(id,el){
 }
 
 function fillCatSel(){
-  var s=document.getElementById('catSel');
-  var prev=s.value; // запоминаем текущий выбор
-  s.innerHTML='';
+  var picker=document.getElementById('catPicker');
+  if(!picker) return;
+  picker.innerHTML='';
+  var hidden=document.getElementById('catSel');
+  // выбираем первую по умолчанию
+  hidden.value=CATS[curTab][0].id;
   CATS[curTab].forEach(function(c){
-    var o=document.createElement('option');
-    o.value=c.id;
-    o.textContent=c.icon+' '+c.name;
-    s.appendChild(o);
+    var b=document.createElement('button');
+    b.type='button';
+    b.setAttribute('data-catid', c.id);
+    var isFirst=(c.id===CATS[curTab][0].id);
+    b.style.cssText='padding:6px 10px;border-radius:10px;border:1.5px solid '+(isFirst?'var(--accent)':'var(--border)')+';background:'+(isFirst?'rgba(91,127,255,.18)':'var(--surface)')+';color:'+(isFirst?'var(--text)':'var(--muted)')+';font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px;font-family:inherit';
+    b.innerHTML=c.icon+' '+c.name;
+    b.onclick=function(){
+      // снимаем выделение со всех
+      picker.querySelectorAll('button').forEach(function(x){
+        x.style.borderColor='var(--border)';
+        x.style.background='var(--surface)';
+        x.style.color='var(--muted)';
+      });
+      // выделяем нажатую
+      b.style.borderColor='var(--accent)';
+      b.style.background='rgba(91,127,255,.18)';
+      b.style.color='var(--text)';
+      // сохраняем значение
+      hidden.value=c.id;
+    };
+    picker.appendChild(b);
   });
-  // восстанавливаем если такая категория есть
-  if(prev && CATS[curTab].find(function(c){return c.id===prev})) s.value=prev;
 }
 
 function render(){renderSummary();renderList()}
@@ -503,11 +520,11 @@ function renderList(){
   });
 }
 
-// ── ADD ENTRY — ИСПРАВЛЕННАЯ ВЕРСИЯ ──────────
+// ── ADD ENTRY ──────────────────────────────────
 function addEntry(){
-  // читаем значение select напрямую в момент нажатия
-  var selEl=document.getElementById('catSel');
-  var cat=selEl.options[selEl.selectedIndex].value;
+  var cat=document.getElementById('catSel').value;
+  // DEBUG — убрать после проверки
+  console.log('Категория при сохранении:', cat);
   var raw=document.getElementById('amtInp').value.trim().replace(',','.');
   var amt=parseFloat(raw);
   var note=document.getElementById('noteInp').value.trim();
