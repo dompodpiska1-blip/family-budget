@@ -553,6 +553,7 @@ function addEntry(){
   if(fbDb){
     fbDb.ref('entries').push(rec)
       .then(function(){
+        sendTgNotify(rec);
         document.getElementById('amtInp').value='';
         document.getElementById('noteInp').value='';
         btn.disabled=false;btn.textContent='+ Добавить запись';
@@ -566,6 +567,7 @@ function addEntry(){
     rec.id='loc_'+Date.now()+'_'+Math.random().toString(36).slice(2);
     entries.unshift(rec);
     saveLocal(entries);
+    sendTgNotify(rec);
     document.getElementById('amtInp').value='';
     document.getElementById('noteInp').value='';
     btn.disabled=false;btn.textContent='+ Добавить запись';
@@ -726,6 +728,25 @@ function hiAv(av){
 function updateWhoBar(){
   document.getElementById('wAv').textContent=uAv;
   document.getElementById('wName').textContent=uName||'Не указано';
+}
+
+function sendTgNotify(rec){
+  var token= + TG_TOKEN + ;
+  var chatId= + TG_CHAT + ;
+  var cat=getCat(rec.type, rec.cat);
+  var typeWord=rec.type==='expense'?'💸 Расход':'💰 Доход';
+  var text=typeWord+'
+'+
+    '👤 '+( rec.who||'Неизвестно')+'
+'+
+    cat.icon+' '+cat.name+' — '+fmt(rec.amount)+' ₴'+
+    (rec.note?'
+📝 '+rec.note:'');
+  fetch('https://api.telegram.org/bot'+token+'/sendMessage',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({chat_id:chatId, text:text})
+  }).catch(function(){});
 }
 
 function fmt(n){return Number(n).toLocaleString('ru-RU',{maximumFractionDigits:0})}
